@@ -3,9 +3,9 @@ package modules
 import (
 	"fmt"
 	"github.com/fatih/color"
-	"strings"
-	"github.com/pnegahdar/venvy/venvy"
 	"github.com/pnegahdar/venvy/util"
+	"github.com/pnegahdar/venvy/venvy"
+	"strings"
 )
 
 type PS1Config struct {

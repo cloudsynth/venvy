@@ -26,6 +26,14 @@ func UnmarshalEmpty(data []byte, v interface{}) error {
 	return json.Unmarshal(data, v)
 }
 
+func UnmarshalAndValidate(data []byte, v interface{}) error {
+	err := UnmarshalEmpty(data, v)
+	if err != nil {
+		return err
+	}
+	return ValidateStruct(v)
+}
+
 func StringTemplate(tmplName, tmpl string, data interface{}) (string, error) {
 	parsedTemplate, err := template.New(tmplName).Parse(tmpl)
 	if err != nil {
@@ -89,4 +97,3 @@ func ValidateStruct(data interface{}) error {
 	})
 	return rootValidator.Struct(data)
 }
-

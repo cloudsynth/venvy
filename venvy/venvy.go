@@ -19,9 +19,9 @@ type Moduler interface {
 }
 
 type Project struct {
-	Name                  string   `validate:"cleanName"`
+	Name                  string `validate:"cleanName"`
 	Root                  string
-	Generation            int      `validate:"min=0"`
+	Generation            int `validate:"min=0"`
 	Modules               []string
 	ScriptSubcommands     []string `json:"script_subcommands"`
 	DisableBuiltinModules bool     `json:"disable_builtin_modules"`

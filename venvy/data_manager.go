@@ -1,13 +1,13 @@
 package venvy
 
 import (
-	"path/filepath"
+	"encoding/json"
 	"fmt"
 	"github.com/peterbourgon/diskv"
-	"os"
-	"strings"
-	"encoding/json"
 	logger "github.com/sirupsen/logrus"
+	"os"
+	"path/filepath"
+	"strings"
 )
 
 type DataManager struct {

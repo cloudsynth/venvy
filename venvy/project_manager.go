@@ -2,8 +2,8 @@ package venvy
 
 import (
 	"fmt"
-	"path/filepath"
 	"github.com/pnegahdar/venvy/util"
+	"path/filepath"
 )
 
 type NamedModuler struct {
@@ -57,6 +57,12 @@ func (pm *ProjectManager) RootDir() string {
 }
 
 func (pm *ProjectManager) RootPath(elem ...string) string {
+	if len(elem) == 1 {
+		expandedElem := util.MustExpandPath(elem[0])
+		if filepath.IsAbs(expandedElem) {
+			return expandedElem
+		}
+	}
 	elem = append([]string{pm.RootDir()}, elem...)
 	return filepath.Join(elem...)
 }

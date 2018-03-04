@@ -25,7 +25,7 @@ type = "python"
 	python = "python3.6"
 	dependencies = ['requirements.txt']
 	auto_install_deps = true
-
+	
 [[modules]]
 name = "py2"
 type = "python"
@@ -34,14 +34,45 @@ type = "python"
 	dependencies = ['requirements.txt']
 	auto_install_deps = true
 
+
+[[modules]]
+name = "local-env"
+type = "env"
+
+    [modules.config.vars]
+    SERVER_SITE="http://127.0.0.1:8000"
+
+[[modules]]
+name = "dev-mux"
+type = "tmux-window"
+
+	[modules.config]
+	name = "server"
+
+	    [[modules.config.panes]]
+	    commands = ["venvy acme -- python manage.py runserver"]
+
+	    [[modules.config.panes]]
+	    commands = ["venvy acme -- python manage.py shell_plus"]
+
+	    # Scratch local dev
+	    [[modules.config.panes]]
+	    commands = ["venvy acme"]
+
+
 [[projects]]
-name = "my_project"
-modules = ["py3"]
+name = "acme"
+modules = ["py3", "local-env"]
 script_subcommands = ["scirpts/deploy.sh"] # Dirs with scripts or files
 
 [[projects]]
-name = "my_project27" 
-modules = ["py2"]
+name = "acme-py27"
+modules = ["py2", "local-env"]
+script_subcommands = ["scirpts/deploy.sh"] # Dirs with scripts or files
+
+[[projects]]
+name = "acme-dev"
+modules = ["dev-mux"]
 ```
 
 ### Use your virtual environments
@@ -55,40 +86,46 @@ venvy preserves a history of files it's seen so they can be activated from anywh
 #### Activate the environment:
 
 ```
-venvy my_project
+venvy acme
+```
+
+#### Start the tmux environment:
+
+```
+venvy acme-dev
 ```
 
 #### Execute in environment:
 
 ```
-venvy my_project -- python -V
+venvy acme -- python -V
 ```
 
-### Execute the deploy.sh script in the environment: 
+#### Execute the deploy.sh script in the environment: 
 
 ```
-vevny my_project.deploy
+vevny acme.deploy
 ```
 
 #### Reset the environment:
 
 ```
-venvy my_project --reset
+venvy acme --reset
 ```
 
-#### Create a temporary environment:
+#### Create or execute in a temporary environment:
 
 ```
-venvy my_project --temp
+venvy acme --temp
 # OR e.g. test multiple version of python
-venvy my_project --temp -- py.test
-venvy my_project27 --temp -- py.test
+venvy acme --temp -- py.test
+venvy acme-py27 --temp -- py.test
 ```
 
 #### Debug the environment:
 
 ```
-venvy my_project --debug
+venvy acme --verbose
 ```
 
 
@@ -103,8 +140,8 @@ devenv
 #### Show paths:
 
 ```
-venvy my_project --print--root
-venvy my_project.deploy --print-path
+venvy acme --print--root
+venvy acme.deploy --print-path
 ```
 
 For teams you are encouraged to put developer specific configs in a shared file so teammates can improve their development environments. 
@@ -148,6 +185,32 @@ type = "env"
     [modules.config.vars]
     PYTHONPATH="$(venvy my_project --print-root)"
     TZ="UTC"
+```
+
+### Tmux Window
+
+**Type**: tmux-window
+
+Launches a managed tmux window with the panes and commands specified. 
+
+```toml
+[[modules]]
+name = "tmux"
+type = "tmux-windoow"
+
+    [modules.config]
+    name = "server" # required, name suffix of the tmux window 
+    # Optional
+    disable_destroy_existing = false # default false, if set to true venvy wont destory the already existing tmux window
+    layout = "tile" # default: tile, see 'man tmux', and grep 'The following layouts are supported' for more info 
+    
+        # Optional array of panes
+        [[modules.config.panes]]
+        root = "" # deault: Project root, can be a rel path to the project root or abspth
+        commands = ["venvy acme -- python manage.py runserver"]
+
+        [[modules.config.panes]]
+        commands = ["venvy acme -- python manage.py shell_plus"]
 ```
 
 ### Exec
@@ -221,7 +284,7 @@ type = "debug"
 ```toml
 [[project]]
 name = "broken_activation"
-modules = ["debug", "py3", ...]
+modules = ["debug", "py3", "..."]
 ```
 
 ## Adding modules:

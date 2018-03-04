@@ -4,6 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/pnegahdar/venvy/modules"
+	"github.com/pnegahdar/venvy/util"
+	"github.com/pnegahdar/venvy/venvy"
 	logger "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"io/ioutil"
@@ -12,13 +15,11 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
-	"github.com/pnegahdar/venvy/modules"
-	"github.com/pnegahdar/venvy/util"
-	"github.com/pnegahdar/venvy/venvy"
 )
 
 var activateFileEnvVar = fmt.Sprintf("%s_ACTIVATE_FILE", strings.ToUpper(venvy.ProjectName))
 var deactivateFileEnvVar = fmt.Sprintf("%s_DEACTIVATE_FILE", strings.ToUpper(venvy.ProjectName))
+var disableHistoryEnvVar = fmt.Sprintf("%s_DISABLE_CONFIG_HISTORY", strings.ToUpper(venvy.ProjectName))
 var evalHeleperCommand = fmt.Sprintf(`eval $(%s shell-init)`, venvy.ProjectName)
 
 var rootCmd = &cobra.Command{
@@ -41,7 +42,7 @@ if [ "${current_cmd_type#*function}" = "$current_cmd_type" ]; then
 	function {{ .ProjectName }}(){
 		activate_f=$(mktemp);
 		deactivate_f=$(mktemp);
-		env {{ .ActivateFileEnvVar }}=${activate_f} {{ .DeactivateFileEnvVar }}=${deactivate_f} ${original_{{.ProjectName}}_cmd} $@ || return $?;
+		env {{ .ActivateFileEnvVar }}=${activate_f} {{ .DeactivateFileEnvVar }}=${deactivate_f} ${original_{{.ProjectName}}_cmd} --quiet $@ || return $?;
 		if [ -s ${activate_f} ]; then
 			devenv || true;
 			env {{ .ActivateFileEnvVar }}=${activate_f} {{ .DeactivateFileEnvVar }}=${deactivate_f} ${original_{{.ProjectName}}_cmd} $@ || return $?;
@@ -216,7 +217,11 @@ func makeScriptCommand(manager *venvy.ProjectManager, script *foundScript) func(
 
 func LoadConfigCommands() ([]*cobra.Command, error) {
 	cmds := []*cobra.Command{}
-	foundConfigs := LoadConfigs(true, true)
+	useHistory := true
+	if os.Getenv(disableHistoryEnvVar) != "" {
+		useHistory = false
+	}
+	foundConfigs := LoadConfigs(true, useHistory)
 	seenProjects := map[string]string{}
 	for _, configF := range foundConfigs {
 		config := configF.Config()
@@ -281,16 +286,23 @@ func errExit(err error) {
 
 func handleCliInit() {
 	// Initialize the logger
-	debug, err := rootCmd.PersistentFlags().GetBool("debug")
+	debug, err := rootCmd.PersistentFlags().GetBool("verbose")
 	errExit(err)
 	if debug {
 		logger.SetLevel(logger.DebugLevel)
 	}
+	quiet, err := rootCmd.PersistentFlags().GetBool("quiet")
+	errExit(err)
+	if quiet {
+		logger.SetLevel(logger.FatalLevel)
+	}
+
 }
 
 func main() {
 	var err error
-	rootCmd.PersistentFlags().Bool("debug", false, fmt.Sprintf("debug %s", venvy.ProjectName))
+	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "enable verbose logging")
+	rootCmd.PersistentFlags().BoolP("quiet", "q", false, fmt.Sprintf("disable all logging", venvy.ProjectName))
 
 	logger.SetOutput(os.Stderr) // default but explicit
 

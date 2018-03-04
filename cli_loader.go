@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/mitchellh/go-homedir"
+	"github.com/pnegahdar/venvy/util"
+	"github.com/pnegahdar/venvy/venvy"
 	logger "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"os"
@@ -15,8 +17,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-	"github.com/pnegahdar/venvy/util"
-	"github.com/pnegahdar/venvy/venvy"
 )
 
 var defaultFileName = fmt.Sprintf("%s.toml", venvy.ProjectName)
@@ -95,7 +95,7 @@ var extExecPrefix = map[string]string{
 func extractScript(path string, f os.FileInfo) (*foundScript, error) {
 	nameExt := f.Name()
 	extension := filepath.Ext(nameExt)
-	name := nameExt[0: len(nameExt)-len(extension)]
+	name := nameExt[0 : len(nameExt)-len(extension)]
 	isClean := util.CleanNameRe.MatchString(name)
 	if !isClean {
 		return nil, fmt.Errorf("script %s name does not match regex [a-z_-]+ less the extension", name)
@@ -272,11 +272,13 @@ func configsPathsFromPwd() []*foundConfig {
 	return []*foundConfig{{Path: inDirConfig, StorageDir: dotDir(workDir)}}
 }
 
-func LoadConfigs(prefetch bool, saveInHistory bool) []*foundConfig {
+func LoadConfigs(prefetch bool, useHistory bool) []*foundConfig {
 	allDiscovered := [][]*foundConfig{
 		configPathsFromGit(),
 		configsPathsFromPwd(),
-		configPathsFromHistory(),
+	}
+	if useHistory {
+		allDiscovered = append(allDiscovered, configPathsFromHistory())
 	}
 	uniqueConfigs := []*foundConfig{}
 	pathsSeen := map[string]bool{}
@@ -294,7 +296,7 @@ func LoadConfigs(prefetch bool, saveInHistory bool) []*foundConfig {
 			}
 		}
 	}
-	if saveInHistory {
+	if useHistory {
 		data, err := json.Marshal(uniqueConfigs)
 		if err != nil {
 			logger.Debugf("unable to marshall history file with err %s", err)

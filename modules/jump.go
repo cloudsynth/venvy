@@ -2,9 +2,9 @@ package modules
 
 import (
 	"fmt"
-	"os"
-	"github.com/pnegahdar/venvy/venvy"
 	"github.com/pnegahdar/venvy/util"
+	"github.com/pnegahdar/venvy/venvy"
+	"os"
 )
 
 type JumpConfig struct {

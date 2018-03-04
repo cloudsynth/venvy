@@ -4,11 +4,11 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
+	"github.com/pnegahdar/venvy/util"
+	"github.com/pnegahdar/venvy/venvy"
 	"io/ioutil"
 	"path"
 	"strings"
-	"github.com/pnegahdar/venvy/venvy"
-	"github.com/pnegahdar/venvy/util"
 )
 
 const DefaultPython = "python"
@@ -17,7 +17,7 @@ const DefaultPipInstallCommand = "pip install"
 
 type PyModuleConfig struct {
 	Python                string
-	AutoInstallDeps       bool   `json:"auto_install_deps"`
+	AutoInstallDeps       bool `json:"auto_install_deps"`
 	Dependencies          []string
 	PipInstallCommand     string `json:"pip_install_command"`
 	PrepPipInstallCommand string `json:"prep_pip_install_command"`

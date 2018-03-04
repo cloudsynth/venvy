@@ -1,10 +1,10 @@
 package modules
 
 import (
-	"github.com/pnegahdar/venvy/venvy"
-	"github.com/pnegahdar/venvy/util"
-	"os"
 	"fmt"
+	"github.com/pnegahdar/venvy/util"
+	"github.com/pnegahdar/venvy/venvy"
+	"os"
 )
 
 type EnvVarConfig struct {
