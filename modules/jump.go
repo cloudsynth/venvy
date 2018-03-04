@@ -1,8 +1,10 @@
-package main
+package modules
 
 import (
 	"fmt"
 	"os"
+	"github.com/pnegahdar/venvy/venvy"
+	"github.com/pnegahdar/venvy/util"
 )
 
 type JumpConfig struct {
@@ -11,7 +13,7 @@ type JumpConfig struct {
 }
 
 type JumpModule struct {
-	manager *ProjectManager
+	manager *venvy.ProjectManager
 	lastDir string
 	config  *JumpConfig
 }
@@ -27,10 +29,10 @@ func (jm *JumpModule) ShellDeactivateCommands() ([]string, error) {
 	return nil, nil
 }
 
-func NewJumpModule(manager *ProjectManager, self *Module) (Moduler, error) {
+func NewJumpModule(manager *venvy.ProjectManager, self *venvy.Module) (venvy.Moduler, error) {
 	moduleConfig := &JumpConfig{}
 	lastDir, _ := os.Getwd()
-	err := unmarshalEmpty(self.Config, moduleConfig)
+	err := util.UnmarshalEmpty(self.Config, moduleConfig)
 	if err != nil {
 		return nil, err
 	}

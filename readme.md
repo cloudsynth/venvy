@@ -37,6 +37,7 @@ type = "python"
 [[projects]]
 name = "my_project"
 modules = ["py3"]
+script_subcommands = ["scirpts/deploy.sh"] # Dirs with scripts or files
 
 [[projects]]
 name = "my_project27" 
@@ -63,25 +64,31 @@ venvy my_project
 venvy my_project -- python -V
 ```
 
+### Execute the deploy.sh script in the environment: 
+
+```
+vevny my_project.deploy
+```
+
 #### Reset the environment:
 
 ```
-venvy --reset my_project
+venvy my_project --reset
 ```
 
 #### Create a temporary environment:
 
 ```
-venvy --temp my_project
+venvy my_project --temp
 # OR e.g. test multiple version of python
-venvy --temp my_project -- py.test
-venvy --temp my_project27 -- py.test
+venvy my_project --temp -- py.test
+venvy my_project27 --temp -- py.test
 ```
 
 #### Debug the environment:
 
 ```
-venvy --debug my_project
+venvy my_project --debug
 ```
 
 
@@ -91,6 +98,13 @@ venvy --debug my_project
 
 ```
 devenv
+```
+
+#### Show paths:
+
+```
+venvy my_project --print--root
+venvy my_project.deploy --print-path
 ```
 
 For teams you are encouraged to put developer specific configs in a shared file so teammates can improve their development environments. 
@@ -119,7 +133,22 @@ type = "python"
 	prep_pip_install_command = "pip install" # Default: "pip install", the command to use to upgrade pip/virtualenv
 	virtualenv_command = "virtualenv" # Default: "vritualenv", the command to use to build the virtualenv
 ```
+### EnvVars
 
+**Type**: env
+
+Sets and unsets enviornment variables for the environment. 
+
+```toml
+[[modules]]
+name = "pypath"
+type = "env"
+
+    # Optional:
+    [modules.config.vars]
+    PYTHONPATH="$(venvy my_project --print-root)"
+    TZ="UTC"
+```
 
 ### Exec
 
@@ -206,7 +235,7 @@ type Moduler interface {
 }
 ```
 
-To create a new module look at files in the repo named `module_*.go`. For a very simple one look at `module_debug.go` for more complex example look at `module_python.go`. 
+To create a new module look at files in the repo named `modules/*.go`. For a very simple one look at `modules/debug.go` for more complex example look at `modules/python.go`. 
 
 
 FAQ: 

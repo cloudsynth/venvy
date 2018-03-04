@@ -1,4 +1,4 @@
-package main
+package modules
 
 import (
 	"crypto/md5"
@@ -7,6 +7,8 @@ import (
 	"io/ioutil"
 	"path"
 	"strings"
+	"github.com/pnegahdar/venvy/venvy"
+	"github.com/pnegahdar/venvy/util"
 )
 
 const DefaultPython = "python"
@@ -15,7 +17,7 @@ const DefaultPipInstallCommand = "pip install"
 
 type PyModuleConfig struct {
 	Python                string
-	AutoInstallDeps       bool `json:"auto_install_deps"`
+	AutoInstallDeps       bool   `json:"auto_install_deps"`
 	Dependencies          []string
 	PipInstallCommand     string `json:"pip_install_command"`
 	PrepPipInstallCommand string `json:"prep_pip_install_command"`
@@ -23,7 +25,7 @@ type PyModuleConfig struct {
 }
 
 type PythonModule struct {
-	manager *ProjectManager
+	manager *venvy.ProjectManager
 	config  *PyModuleConfig
 }
 
@@ -55,7 +57,7 @@ func (pm *PythonModule) autoInstallCalculateDepHash() (string, error) {
 	for _, dep := range pm.config.Dependencies {
 		// read the deps if its a file, preferring .txt instead of isFile type check for safety sake
 		if strings.HasSuffix(dep, ".txt") {
-			fullPath := dep
+			fullPath := util.MustExpandPath(dep)
 			if !path.IsAbs(dep) {
 				fullPath = pm.manager.RootPath(dep)
 			}
@@ -85,7 +87,7 @@ func (pm *PythonModule) autoInstallArgs() string {
 }
 
 func (pm *PythonModule) venvExists() bool {
-	return pathExists(pm.activteShPath())
+	return util.PathExists(pm.activteShPath())
 }
 
 func (pm *PythonModule) ShellActivateCommands() ([]string, error) {
@@ -127,9 +129,9 @@ func (pm *PythonModule) ShellDeactivateCommands() ([]string, error) {
 	return []string{"deactivate"}, nil
 }
 
-func NewPythonModule(manager *ProjectManager, self *Module) (Moduler, error) {
+func NewPythonModule(manager *venvy.ProjectManager, self *venvy.Module) (venvy.Moduler, error) {
 	moduleConfig := &PyModuleConfig{}
-	err := unmarshalEmpty(self.Config, moduleConfig)
+	err := util.UnmarshalEmpty(self.Config, moduleConfig)
 	if err != nil {
 		return nil, err
 	}

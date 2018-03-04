@@ -1,8 +1,11 @@
-package main
+package venvy
 
 import (
 	"encoding/json"
 )
+
+const ProjectName = "venvy"
+const Version = "0.0.0"
 
 type Module struct {
 	Name   string          `validate:"cleanName"`
@@ -16,9 +19,9 @@ type Moduler interface {
 }
 
 type Project struct {
-	Name                  string `validate:"cleanName"`
+	Name                  string   `validate:"cleanName"`
 	Root                  string
-	Generation            int `validate:"min=0"`
+	Generation            int      `validate:"min=0"`
 	Modules               []string
 	ScriptSubcommands     []string `json:"script_subcommands"`
 	DisableBuiltinModules bool     `json:"disable_builtin_modules"`
@@ -30,13 +33,6 @@ type Config struct {
 }
 
 // Modules need to implement the following initialization interface
-type moduleMaker func(configManager *ProjectManager, self *Module) (Moduler, error)
+type ModuleMaker func(configManager *ProjectManager, self *Module) (Moduler, error)
 
-// Maps Module.Type to type handler
-var ModuleMakers = map[string]moduleMaker{
-	"python": NewPythonModule,
-	"jump":   NewJumpModule,
-	"ps1":    NewPS1Module,
-	"debug":  NewDebugModule,
-	"exec":   NewExecModule,
-}
+type ModuleMakerTypeMap map[string]ModuleMaker

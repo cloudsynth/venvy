@@ -12,24 +12,24 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"github.com/pnegahdar/venvy/modules"
+	"github.com/pnegahdar/venvy/util"
+	"github.com/pnegahdar/venvy/venvy"
 )
 
-const ProjectName = "venvy"
-const Version = "0.0.0"
-
-var ActivateFileEnvVar = fmt.Sprintf("%s_ACTIVATE_FILE", strings.ToUpper(ProjectName))
-var DeactivateFileEnvVar = fmt.Sprintf("%s_DEACTIVATE_FILE", strings.ToUpper(ProjectName))
-var EvalHeleperCommand = fmt.Sprintf(`eval $(%s shell-init)`, ProjectName)
+var activateFileEnvVar = fmt.Sprintf("%s_ACTIVATE_FILE", strings.ToUpper(venvy.ProjectName))
+var deactivateFileEnvVar = fmt.Sprintf("%s_DEACTIVATE_FILE", strings.ToUpper(venvy.ProjectName))
+var evalHeleperCommand = fmt.Sprintf(`eval $(%s shell-init)`, venvy.ProjectName)
 
 var rootCmd = &cobra.Command{
-	Use:   ProjectName,
+	Use:   venvy.ProjectName,
 	Short: "Context managers for shell.",
 }
 
 // Whether the local users shell is setup (i.e was the activator initialized in .bashrc/etc)
 func EvalPaths() (activate string, deactivate string, bothSet bool) {
-	activate = os.Getenv(ActivateFileEnvVar)
-	deactivate = os.Getenv(DeactivateFileEnvVar)
+	activate = os.Getenv(activateFileEnvVar)
+	deactivate = os.Getenv(deactivateFileEnvVar)
 	bothSet = activate != "" && deactivate != ""
 	return
 }
@@ -39,21 +39,22 @@ current_cmd_type=$(command -V {{ .ProjectName }});
 if [ "${current_cmd_type#*function}" = "$current_cmd_type" ]; then
 	original_{{.ProjectName}}_cmd=$(command -v {{ .ProjectName }});
 	function {{ .ProjectName }}(){
-		devenv || true;
 		activate_f=$(mktemp);
 		deactivate_f=$(mktemp);
-		export DEACTIVATE_F=${deactivate_f};
 		env {{ .ActivateFileEnvVar }}=${activate_f} {{ .DeactivateFileEnvVar }}=${deactivate_f} ${original_{{.ProjectName}}_cmd} $@ || return $?;
 		if [ -s ${activate_f} ]; then
-			. ${activate_f};
+			devenv || true;
+			env {{ .ActivateFileEnvVar }}=${activate_f} {{ .DeactivateFileEnvVar }}=${deactivate_f} ${original_{{.ProjectName}}_cmd} $@ || return $?;
+			. ${activate_f} || return $?;
+			export DEACTIVATE_F=${deactivate_f};
 		fi;
 		rm ${activate_f} > /dev/null 2>&1 || true;
 		unset activate_f;
 		unset deactivate_f;
 	};
 	function devenv(){
-		if [ ! -z "${DEACTIVATE_F}" ] && [ -s ${DEACTIVATE_F} ]; then
-			. ${DEACTIVATE_F};
+		if [ ! -z "${DEACTIVATE_F}" ] && [ -s "${DEACTIVATE_F}" ]; then
+			. ${DEACTIVATE_F} || return $?;
 		fi;
 		rm ${DEACTIVATE_F} >/dev/null 2>&1 || true;
 		unset DEACTIVATE_F;
@@ -61,42 +62,42 @@ if [ "${current_cmd_type#*function}" = "$current_cmd_type" ]; then
 fi;
 `
 
-var defaultModules = []*Module{
+var defaultModules = []*venvy.Module{
 	{Name: "jump_builtin", Type: "jump"},
 	{Name: "ps1_builtin", Type: "ps1"},
 }
 
 func evalScript() (string, error) {
 	originalCmd := os.Args[0]
-	return stringTemplate("evalTmpl", evalTmpl, struct {
+	return util.StringTemplate("evalTmpl", evalTmpl, struct {
 		ProjectName          string
 		ActivateFileEnvVar   string
 		DeactivateFileEnvVar string
 		OriginalCmd          string
 	}{
-		ProjectName:          ProjectName,
-		ActivateFileEnvVar:   ActivateFileEnvVar,
-		DeactivateFileEnvVar: DeactivateFileEnvVar,
+		ProjectName:          venvy.ProjectName,
+		ActivateFileEnvVar:   activateFileEnvVar,
+		DeactivateFileEnvVar: deactivateFileEnvVar,
 		OriginalCmd:          originalCmd,
 	})
 }
 
-func issueExec(manager *ProjectManager, cmd string) {
+func issueExec(manager *venvy.ProjectManager, cmd string) {
 	// Add exec module
-	execConfig, err := json.Marshal(&ExecConfig{ActivationCommands: []string{cmd}})
+	execConfig, err := json.Marshal(&modules.ExecConfig{ActivationCommands: []string{cmd}})
 	errExit(err)
-	execModule := &Module{Name: "exec_subcommand", Type: "exec", Config: json.RawMessage(execConfig)}
-	manager.AppendModulesOnProject(execModule)
+	execModule := &venvy.Module{Name: "exec_subcommand", Type: "exec", Config: json.RawMessage(execConfig)}
+	manager.AppendModules(execModule)
 
 	// Setup activation scripts`
-	activationScript, err := manager.ShellActivateSh()
+	activationScript, err := manager.ShellActivateCommands()
 	errExit(err)
-	deactivationScript, err := manager.ShellDeactivateSh()
+	deactivationScript, err := manager.ShellDeactivateCommands()
 	errExit(err)
 	scriptBody := strings.Join([]string{
 		"set -e",
-		activationScript,
-		deactivationScript,
+		strings.Join(activationScript, "\n"),
+		strings.Join(deactivationScript, "\n"),
 	}, "\n")
 
 	// Write activation script
@@ -129,60 +130,62 @@ func issueExec(manager *ProjectManager, cmd string) {
 	errExit(err)
 }
 
-func issueActivate(manager *ProjectManager, activatePath string, deactivatePath string) {
+func issueActivate(manager *venvy.ProjectManager, activatePath string, deactivatePath string) {
 	// prep activation scripts
-	activationScript, err := manager.ShellActivateSh()
+	activationLines, err := manager.ShellActivateCommands()
 	errExit(err)
-	deactivationScript, err := manager.ShellDeactivateSh()
+	activationScript := []byte(strings.Join(activationLines, " && \\\n"))
+	deactivationLines, err := manager.ShellDeactivateCommands()
 	errExit(err)
+	deactivationScript := []byte(strings.Join(deactivationLines, " && \\\n"))
 
 	// write activation scripts
-	err = ioutil.WriteFile(activatePath, []byte(activationScript), 0600)
-	logger.Debugf("Writing activation file to %s with contents:\n %s", activatePath, activationScript)
+	err = ioutil.WriteFile(activatePath, activationScript, 0600)
+	logger.Debugf("Writing activation file to %s with contents:\n%s", activatePath, activationScript)
 	errExit(err)
-	err = ioutil.WriteFile(deactivatePath, []byte(deactivationScript), 0600)
-	logger.Debugf("Writing deactivation file to %s with contents:\n %s", deactivatePath, deactivationScript)
+	err = ioutil.WriteFile(deactivatePath, deactivationScript, 0600)
+	logger.Debugf("Writing deactivation file to %s with contents:\n%s", deactivatePath, deactivationScript)
 	errExit(err)
 }
 
-func preFuncCmd(manager *ProjectManager) {
-	reset, err := rootCmd.PersistentFlags().GetBool("reset")
+func preSubCommand(cmd *cobra.Command, manager *venvy.ProjectManager) {
+	reset, err := cmd.Flags().GetBool("reset")
 	errExit(err)
 	if reset {
-		path := manager.StoragePath()
-		logger.Debugf("Deleting data dir %s", path)
-		err := os.RemoveAll(path)
-		errExit(err)
-		logger.Debugf("Recreating data dir %s", path)
-		err = os.MkdirAll(path, 0700)
+		err := manager.Reset()
 		errExit(err)
 	}
 
-	temp, err := rootCmd.PersistentFlags().GetBool("temp")
+	temp, err := cmd.Flags().GetBool("temp")
 	errExit(err)
 	if temp {
-		name, err := ioutil.TempDir("", ProjectName)
+		name, err := ioutil.TempDir("", venvy.ProjectName)
+		errExit(err)
+		err = manager.ChDir(name)
 		errExit(err)
 		logger.Debugf("Using temp dir for venv %s", name)
-		manager.storageRoot = name
 	}
 }
 
-func makeActivationCommand(config *Config, configF *foundConfig, project *Project) func(cmd *cobra.Command, args []string) {
+func makeActivationCommand(manager *venvy.ProjectManager) func(cmd *cobra.Command, args []string) {
 	return func(cmd *cobra.Command, args []string) {
-		manager, err := NewProjectManager(config, configF.Path, project.Name, configF.StorageDir)
-		preFuncCmd(manager)
-		if !project.DisableBuiltinModules {
-			manager.AppendModulesOnProject(defaultModules...)
-		}
+		showRoot, err := cmd.Flags().GetBool("print-root")
 		errExit(err)
+		if showRoot {
+			fmt.Println(manager.RootDir())
+			os.Exit(0)
+		}
+		preSubCommand(cmd, manager)
+		if !manager.Project.DisableBuiltinModules {
+			manager.AppendModules(defaultModules...)
+		}
 		if len(args) == 0 {
 			// Activation
 			activatePath, deactivatePath, bothSet := EvalPaths()
 			if bothSet {
 				issueActivate(manager, activatePath, deactivatePath)
 			} else {
-				err = fmt.Errorf("please add `%s` to your .bashrc/.zshrc to enable shell support", EvalHeleperCommand)
+				err := fmt.Errorf("please add `%s` to your .bashrc/.zshrc to enable shell support", evalHeleperCommand)
 				errExit(err)
 			}
 		} else {
@@ -191,24 +194,37 @@ func makeActivationCommand(config *Config, configF *foundConfig, project *Projec
 	}
 }
 
-func makeScriptCommand(config *Config, configF *foundConfig, project *Project, script *foundScript) func(cmd *cobra.Command, args []string) {
+func makeScriptCommand(manager *venvy.ProjectManager, script *foundScript) func(cmd *cobra.Command, args []string) {
 	return func(cmd *cobra.Command, args []string) {
-		manager, err := NewProjectManager(config, configF.Path, project.Name, configF.StorageDir)
-		preFuncCmd(manager)
+		showPath, err := cmd.Flags().GetBool("print-path")
 		errExit(err)
-		issueExec(manager, script.ExecPrefix+" "+script.FilePath)
+		if showPath {
+			fmt.Println(script.FilePath)
+			os.Exit(0)
+		}
+		preSubCommand(cmd, manager)
+		toExec := script.FilePath
+		if script.ExecPrefix != " " {
+			toExec = script.ExecPrefix + " " + toExec
+		}
+		if len(args) > 0 {
+			toExec += " " + strings.Join(args, " ")
+		}
+		issueExec(manager, toExec)
 	}
 }
 
 func LoadConfigCommands() ([]*cobra.Command, error) {
 	cmds := []*cobra.Command{}
-	configs := LoadConfigs(true, true)
+	foundConfigs := LoadConfigs(true, true)
 	seenProjects := map[string]string{}
-	for _, configF := range configs {
+	for _, configF := range foundConfigs {
 		config := configF.Config()
 		if config == nil {
 			continue
 		}
+		configManager, err := venvy.NewConfigManager(config, configF.Path, configF.StorageDir, modules.DefaultModuleMakers)
+		errExit(err)
 		for _, project := range config.Projects {
 			existingPath, ok := seenProjects[project.Name]
 			if ok {
@@ -216,18 +232,27 @@ func LoadConfigCommands() ([]*cobra.Command, error) {
 				continue
 			}
 			seenProjects[project.Name] = configF.Path
+			projectManager, err := configManager.ProjectManager(project.Name)
+			errExit(err)
 			activateCommand := &cobra.Command{
 				Use:   project.Name,
 				Short: fmt.Sprintf("Activate environment %s", project.Name),
-				Run:   makeActivationCommand(config, configF, project),
+				Run:   makeActivationCommand(projectManager),
 			}
+			activateCommand.Flags().Bool("reset", false, fmt.Sprintf("reset the environment data before initalizing"))
+			activateCommand.Flags().Bool("temp", false, fmt.Sprintf("create a temp data dir for the session"))
+			activateCommand.Flags().Bool("print-root", false, fmt.Sprintf("print the root dir of the project"))
+
 			cmds = append(cmds, activateCommand)
 			for _, script := range configF.Scripts()[project.Name] {
 				subCommand := &cobra.Command{
 					Use:   fmt.Sprintf("%s.%s", project.Name, script.SubCommand),
 					Short: script.Docstring,
-					Run:   makeScriptCommand(config, configF, project, script),
+					Run:   makeScriptCommand(projectManager, script),
 				}
+				subCommand.Flags().Bool("reset", false, fmt.Sprintf("reset the environment data before initalizing"))
+				subCommand.Flags().Bool("temp", false, fmt.Sprintf("create a temp data dir for the session"))
+				subCommand.Flags().Bool("print-path", false, fmt.Sprintf("print the path of the script"))
 				cmds = append(cmds, subCommand)
 
 			}
@@ -265,9 +290,7 @@ func handleCliInit() {
 
 func main() {
 	var err error
-	rootCmd.PersistentFlags().Bool("debug", false, fmt.Sprintf("debug %s", ProjectName))
-	rootCmd.PersistentFlags().Bool("reset", false, fmt.Sprintf("reset the environment data before initalizing"))
-	rootCmd.PersistentFlags().Bool("temp", false, fmt.Sprintf("create a temp data dir for the session"))
+	rootCmd.PersistentFlags().Bool("debug", false, fmt.Sprintf("debug %s", venvy.ProjectName))
 
 	logger.SetOutput(os.Stderr) // default but explicit
 
@@ -275,7 +298,7 @@ func main() {
 		Use:   "version",
 		Short: "Print the version",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println(Version)
+			fmt.Println(venvy.Version)
 		},
 	}
 	rootCmd.AddCommand(versionCmd)

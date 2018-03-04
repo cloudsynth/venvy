@@ -1,4 +1,9 @@
-package main
+package modules
+
+import (
+	"github.com/pnegahdar/venvy/venvy"
+	"github.com/pnegahdar/venvy/util"
+)
 
 type ExecConfig struct {
 	ActivationCommands   []string `json:"activation_commands"`
@@ -6,7 +11,7 @@ type ExecConfig struct {
 }
 
 type ExecModule struct {
-	manager *ProjectManager
+	manager *venvy.ProjectManager
 	config  *ExecConfig
 }
 
@@ -19,9 +24,9 @@ func (ps *ExecModule) ShellDeactivateCommands() ([]string, error) {
 	return ps.config.DeactivationCommands, nil
 }
 
-func NewExecModule(manager *ProjectManager, self *Module) (Moduler, error) {
+func NewExecModule(manager *venvy.ProjectManager, self *venvy.Module) (venvy.Moduler, error) {
 	moduleConfig := &ExecConfig{}
-	err := unmarshalEmpty(self.Config, moduleConfig)
+	err := util.UnmarshalEmpty(self.Config, moduleConfig)
 	if err != nil {
 		return nil, err
 	}

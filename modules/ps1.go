@@ -1,9 +1,11 @@
-package main
+package modules
 
 import (
 	"fmt"
 	"github.com/fatih/color"
 	"strings"
+	"github.com/pnegahdar/venvy/venvy"
+	"github.com/pnegahdar/venvy/util"
 )
 
 type PS1Config struct {
@@ -11,7 +13,7 @@ type PS1Config struct {
 }
 
 type PS1Module struct {
-	manager *ProjectManager
+	manager *venvy.ProjectManager
 	config  *PS1Config
 }
 
@@ -24,23 +26,22 @@ func (ps *PS1Module) ShellActivateCommands() ([]string, error) {
 
 func (ps *PS1Module) ShellDeactivateCommands() ([]string, error) {
 	return []string{
-		`export PS1="$OLD_PS1"`,
-		"unset OLD_PS1",
+		`if [ ! -z "$OLD_PS1" ]; then export PS1="$OLD_PS1"; unset OLD_PS1; fi`,
 	}, nil
 }
 
-func NewPS1Module(manager *ProjectManager, self *Module) (Moduler, error) {
+func NewPS1Module(manager *venvy.ProjectManager, self *venvy.Module) (venvy.Moduler, error) {
 	moduleConfig := &PS1Config{}
-	err := unmarshalEmpty(self.Config, moduleConfig)
+	err := util.UnmarshalEmpty(self.Config, moduleConfig)
 	if err != nil {
 		return nil, err
 	}
 	if moduleConfig.Value == "" {
 		parts := []string{
 			color.HiCyanString("["),
-			color.HiBlueString(ProjectName),
+			color.HiBlueString(venvy.ProjectName),
 			color.HiGreenString(":"),
-			color.HiMagentaString(manager.activeProject.Name),
+			color.HiMagentaString(manager.Project.Name),
 			color.HiCyanString("]"),
 		}
 		moduleConfig.Value = strings.Join(parts, "")

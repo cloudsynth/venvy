@@ -15,14 +15,16 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"github.com/pnegahdar/venvy/util"
+	"github.com/pnegahdar/venvy/venvy"
 )
 
-var defaultFileName = fmt.Sprintf("%s.toml", ProjectName)
+var defaultFileName = fmt.Sprintf("%s.toml", venvy.ProjectName)
 var seenConfigsPath = globalPath("seen_configs.json")
 var scriptDocstringRe = regexp.MustCompile(`^[\-;#/\s}{]+["']([^"']+)["']$`)
 
 func dotDir(inDir string) string {
-	return path.Join(inDir, "."+ProjectName)
+	return path.Join(inDir, "."+venvy.ProjectName)
 }
 
 func globalPath(elem ...string) string {
@@ -45,7 +47,7 @@ type foundConfig struct {
 	Path           string                    `json:"path"`
 	StorageDir     string                    `json:"storage_dir"`
 	ProjectScripts map[string][]*foundScript `json:"known_scripts"`
-	config         *Config
+	config         *venvy.Config
 	loadOnce       sync.Once
 	scriptsOnce    sync.Once
 }
@@ -56,18 +58,18 @@ func (f *foundConfig) loadConfig() {
 		logger.Warnf("unable to read config with error %s", err)
 		return
 	}
-	jsonData, err := tomlToJson(data)
+	jsonData, err := util.TomlToJson(data)
 	if err != nil {
 		logger.Warnf("unable to convert config with error %s", err)
 		return
 	}
-	newConfig := &Config{}
+	newConfig := &venvy.Config{}
 	err = json.Unmarshal(jsonData, newConfig)
 	if err != nil {
 		logger.Warnf("unable to unmarshal config with error %s", err)
 		return
 	}
-	err = validateStruct(newConfig)
+	err = util.ValidateStruct(newConfig)
 	if err != nil {
 		logger.Warnf("unable to validate config with error %s", err)
 		return
@@ -77,7 +79,7 @@ func (f *foundConfig) loadConfig() {
 	logger.Debugf("Loaded %d modules and %d projects from config %s", len(newConfig.Modules), len(newConfig.Projects), f.Path)
 }
 
-func (f *foundConfig) Config() *Config {
+func (f *foundConfig) Config() *venvy.Config {
 	f.loadOnce.Do(f.loadConfig)
 	return f.config
 }
@@ -93,8 +95,8 @@ var extExecPrefix = map[string]string{
 func extractScript(path string, f os.FileInfo) (*foundScript, error) {
 	nameExt := f.Name()
 	extension := filepath.Ext(nameExt)
-	name := nameExt[0 : len(nameExt)-len(extension)]
-	isClean := cleanNameRe.MatchString(name)
+	name := nameExt[0: len(nameExt)-len(extension)]
+	isClean := util.CleanNameRe.MatchString(name)
 	if !isClean {
 		return nil, fmt.Errorf("script %s name does not match regex [a-z_-]+ less the extension", name)
 	}
@@ -153,7 +155,7 @@ func (f *foundConfig) loadScripts() {
 			os.MkdirAll(path.Dir(scriptCacheF), 0700)
 			data, _ := ioutil.ReadFile(scriptCacheF)
 			cacheFnameScripts := map[string]*foundScript{}
-			err := unmarshalEmpty(data, &cacheFnameScripts)
+			err := util.UnmarshalEmpty(data, &cacheFnameScripts)
 			if err != nil {
 				logger.Debugf("unable to load cache scripts for project %s with err %s", project.Name, err)
 			}
@@ -213,7 +215,7 @@ func (f *foundConfig) Scripts() map[string][]*foundScript {
 
 func configPathsFromGit() []*foundConfig {
 	paths := []*foundConfig{}
-	gitRoot, err := findPathInAncestors("", ".git")
+	gitRoot, err := util.FindPathInAncestors("", ".git")
 	storageDir := dotDir(gitRoot)
 	if err != nil {
 		return paths
@@ -303,8 +305,4 @@ func LoadConfigs(prefetch bool, saveInHistory bool) []*foundConfig {
 		}
 	}
 	return uniqueConfigs
-}
-
-func init() {
-	os.MkdirAll(globalPath(), 0700)
 }
