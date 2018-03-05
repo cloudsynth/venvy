@@ -1,7 +1,7 @@
 Venvy 
 =====
 
-A fast unixy modular sh hook system bound to subcomamnds. Useful for bootstrapping and managing local development and CI environments.
+A fast modular (see `modules/`) sh hook system bound to subcomamnds. Useful for bootstrapping and managing local development and CI environments.
 
 # Getting Started
 
@@ -11,6 +11,20 @@ For golang:
 
 ```
 go get -u github.com/pnegahdar/venvy
+```
+
+For OSX:
+
+```
+curl -SL https://github.com/pnegahdar/venvy/releases/download/0.0.0/darwin_amd64 > /usr/local/bin/venvy && \
+    chmod +x /usr/local/bin/venvy
+```
+
+For Linux:
+
+```
+curl -SL https://github.com/pnegahdar/venvy/releases/download/0.0.0/linux_amd64 > /usr/local/bin/venvy && \
+    chmod +x /usr/local/bin/venvy
 ```
 
 ### Create a config
