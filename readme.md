@@ -182,9 +182,12 @@ name = "pypath"
 type = "env"
 
     # Optional:
-    [modules.config.vars]
+    [modules.config.vars] # Vars to set
     PYTHONPATH="$(venvy my_project --print-root)"
     TZ="UTC"
+    
+    [modules.config]
+    unset_vars = ["IS_TESTING"] # Vars to unset
 ```
 
 ### Tmux Window
@@ -206,8 +209,8 @@ type = "tmux-windoow"
     
         # Optional array of panes
         [[modules.config.panes]]
-        root = "" # deault: Project root, can be a rel path to the project root or abspth
-        commands = ["venvy acme -- python manage.py runserver"]
+        root = "data" # deault: Project root, can be a rel path to the project root or abspth
+        commands = ["venvy acme -- python manage.py runserver"] # A lit of commands to run in a window, exit codes are disregarded, all are run.
 
         [[modules.config.panes]]
         commands = ["venvy acme -- python manage.py shell_plus"]

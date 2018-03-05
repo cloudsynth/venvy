@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"path"
 	"strings"
+	"path/filepath"
 )
 
 const DefaultPython = "python"
@@ -16,25 +17,32 @@ const DefaultVirtualenv = "virtualenv"
 const DefaultPipInstallCommand = "pip install"
 
 type PyModuleConfig struct {
-	Python                string
-	AutoInstallDeps       bool `json:"auto_install_deps"`
-	Dependencies          []string
-	PipInstallCommand     string `json:"pip_install_command"`
-	PrepPipInstallCommand string `json:"prep_pip_install_command"`
-	VirtualEnvCommand     string `json:"virtualenv_command"`
+	Python            string
+	AutoInstallDeps   bool   `json:"auto_install_deps"`
+	Dependencies      []string
+	PipInstallCommand string `json:"pip_install_command"`
+	VirtualEnvCommand string `json:"virtualenv_command"`
 }
 
 type PythonModule struct {
 	manager *venvy.ProjectManager
 	config  *PyModuleConfig
+	name    string
 }
 
 func (pm *PythonModule) venvDir() string {
-	return pm.manager.StoragePath("pyvenv")
+	return pm.manager.StoragePath("pyvenvs", pm.name)
 }
 
-func (pm *PythonModule) activteShPath() string {
-	return path.Join(pm.venvDir(), "bin", "activate")
+// All the activation needed, essentially what venv/bin/activate does
+func (pm *PythonModule) venvEnvarModule() *EnvvarModule {
+	return &EnvvarModule{config: &EnvVarConfig{
+		Vars: map[string]string{
+			"VIRTUAL_ENV": pm.venvDir(),
+			"PATH":        fmt.Sprintf("%s/bin:${PATH}", pm.venvDir()),
+		},
+		UnsetVars: []string{"PYTHONHOME"},
+	}}
 }
 
 func (pm *PythonModule) autoInstallHashPath() string {
@@ -73,21 +81,23 @@ func (pm *PythonModule) autoInstallCalculateDepHash() (string, error) {
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
-func (pm *PythonModule) autoInstallArgs() string {
-	args := []string{}
+func (pm *PythonModule) autoInstallCmds() []string {
+	cmds := []string{}
 	for _, dep := range pm.config.Dependencies {
+		cmd := pm.config.PipInstallCommand + " "
 		if strings.HasSuffix(dep, ".txt") {
 			fullPath := pm.manager.RootPath(dep)
-			args = append(args, fmt.Sprintf("-r %s", fullPath))
+			cmd += fmt.Sprintf("-r %s", fullPath)
 		} else {
-			args = append(args, dep)
+			cmd += dep
 		}
+		cmds = append(cmds, cmd)
 	}
-	return strings.Join(args, " ")
+	return cmds
 }
 
 func (pm *PythonModule) venvExists() bool {
-	return util.PathExists(pm.activteShPath())
+	return util.PathExists(filepath.Join(pm.venvDir(), "bin"))
 }
 
 func (pm *PythonModule) ShellActivateCommands() ([]string, error) {
@@ -102,31 +112,33 @@ func (pm *PythonModule) ShellActivateCommands() ([]string, error) {
 		lines = append(lines, strings.Join(args, " "))
 	}
 	if !pm.venvExists() {
-		// Upgrade pip/venv before creating the venv [pip install --upgrade pip virtualenv]
-		addArgs(pm.config.PrepPipInstallCommand, "--upgrade", "pip", "virtualenv")
 		// Create the venv [virtualenv -p python /path/to/venv]
 		addArgs(pm.config.VirtualEnvCommand, "-p", pm.config.Python, pm.venvDir())
 	}
 
-	// Activate the venv '.' = source [. /path/venv/bin/activate]
-	addArgs("VIRTUAL_ENV_DISABLE_PROMPT=1", ".", pm.activteShPath())
-
-	if !pm.venvExists() {
-		// If the venv is new lets upgrade pip in the venv as well [pip install --upgrade pip]
-		addArgs(pm.config.PrepPipInstallCommand, "--upgrade", "pip")
+	eVModule := pm.venvEnvarModule()
+	evCommands, err := eVModule.ShellActivateCommands()
+	if err != nil {
+		return nil, err
 	}
+	lines = append(lines, evCommands...)
 
 	if hashChanged && pm.config.AutoInstallDeps {
 		// run the install [pip install -r requirements.txt deps]
-		addArgs(pm.config.PipInstallCommand, pm.autoInstallArgs())
-		// write the hash so we don't reinstaall these deps [echo sd2if1jdfs > .venvy/project/pyvenv/auto_install.txt]
+		lines = append(lines, pm.autoInstallCmds()...)
+		// write the hash so we don't reinstall these deps [echo sd2if1jdfs > .venvy/project/pyvenv/auto_install.txt]
 		addArgs("echo", currentDepHash, ">", pm.autoInstallHashPath())
 	}
 	return lines, nil
 }
 
 func (pm *PythonModule) ShellDeactivateCommands() ([]string, error) {
-	return []string{"deactivate"}, nil
+	evModule := pm.venvEnvarModule()
+	lines, err := evModule.ShellDeactivateCommands()
+	if err != nil {
+		return nil, err
+	}
+	return lines, nil
 }
 
 func NewPythonModule(manager *venvy.ProjectManager, self *venvy.Module) (venvy.Moduler, error) {
@@ -141,12 +153,9 @@ func NewPythonModule(manager *venvy.ProjectManager, self *venvy.Module) (venvy.M
 	if moduleConfig.PipInstallCommand == "" {
 		moduleConfig.PipInstallCommand = DefaultPipInstallCommand
 	}
-	if moduleConfig.PrepPipInstallCommand == "" {
-		moduleConfig.PrepPipInstallCommand = DefaultPipInstallCommand
-	}
 	if moduleConfig.VirtualEnvCommand == "" {
 		moduleConfig.VirtualEnvCommand = DefaultVirtualenv
 
 	}
-	return &PythonModule{manager: manager, config: moduleConfig}, nil
+	return &PythonModule{manager: manager, config: moduleConfig, name: self.Name}, nil
 }

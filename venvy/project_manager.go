@@ -74,6 +74,15 @@ func (pm *ProjectManager) AppendModules(modules ...*Module) {
 	}
 }
 
+func (pm *ProjectManager) PrependModules(modules ...*Module) {
+	// prepend in reverse so left most arg is up front
+	for i := len(modules) - 1; i >= 0; i -- {
+		pm.relatedModules[modules[i].Name] = modules[i]
+		pm.Project.Modules = append([]string{modules[i].Name}, pm.Project.Modules...)
+
+	}
+}
+
 func (pm *ProjectManager) ShellActivateCommands() ([]string, error) {
 	modules, err := pm.Modulers()
 	if err != nil {

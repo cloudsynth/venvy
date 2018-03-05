@@ -46,8 +46,8 @@ if [ "${current_cmd_type#*function}" = "$current_cmd_type" ]; then
 		if [ -s ${activate_f} ]; then
 			devenv || true;
 			env {{ .ActivateFileEnvVar }}=${activate_f} {{ .DeactivateFileEnvVar }}=${deactivate_f} ${original_{{.ProjectName}}_cmd} $@ || return $?;
-			. ${activate_f} || return $?;
 			export DEACTIVATE_F=${deactivate_f};
+			. ${activate_f} || return $?;
 		fi;
 		rm ${activate_f} > /dev/null 2>&1 || true;
 		unset activate_f;
@@ -63,10 +63,8 @@ if [ "${current_cmd_type#*function}" = "$current_cmd_type" ]; then
 fi;
 `
 
-var defaultModules = []*venvy.Module{
-	{Name: "jump_builtin", Type: "jump"},
-	{Name: "ps1_builtin", Type: "ps1"},
-}
+var defaultJumpModule = &venvy.Module{Name: "jump_builtin", Type: "jump"}
+var defaultPS1Module = &venvy.Module{Name: "ps1_builtin", Type: "ps1"}
 
 func evalScript() (string, error) {
 	originalCmd := os.Args[0]
@@ -178,7 +176,7 @@ func makeActivationCommand(manager *venvy.ProjectManager) func(cmd *cobra.Comman
 		}
 		preSubCommand(cmd, manager)
 		if !manager.Project.DisableBuiltinModules {
-			manager.AppendModules(defaultModules...)
+			manager.PrependModules(defaultPS1Module, defaultJumpModule)
 		}
 		if len(args) == 0 {
 			// Activation

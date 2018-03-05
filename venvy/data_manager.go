@@ -55,7 +55,7 @@ func (dm *DataManager) SetKey(key string, value string) error {
 	return dm.diskKV.Write(key, []byte(value))
 }
 
-func (dm *DataManager) GetKey(key string, value string) (string, error) {
+func (dm *DataManager) GetKey(key string) (string, error) {
 	data, err := dm.diskKV.Read(key)
 	if err != nil {
 		return "", err
