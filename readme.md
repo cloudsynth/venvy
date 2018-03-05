@@ -10,7 +10,7 @@ A fast unixy modular sh hook system bound to subcomamnds. Useful for bootstrappi
 For golang:
 
 ```
-go install -u github.com/pnegahdar/venvy
+go get -u github.com/pnegahdar/venvy
 ```
 
 ### Create a config
