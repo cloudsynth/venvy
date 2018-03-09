@@ -301,6 +301,7 @@ func LoadConfigs(prefetch bool, useHistory bool) []*foundConfig {
 		if err != nil {
 			logger.Debugf("unable to marshall history file with err %s", err)
 		}
+		os.MkdirAll(filepath.Dir(seenConfigsPath), 0600)
 		err = ioutil.WriteFile(seenConfigsPath, data, 0600)
 		if err != nil {
 			logger.Debugf("Unable to save to history file at %s with err %s", seenConfigsPath, err)

@@ -24,6 +24,7 @@ type TmuxWindowConfig struct {
 	Layout                 string // even-horizontal, even-vertical, main-horizontal, main-vertical, tiled
 }
 
+// TODO: tmux when zsh plugin is not enabled
 type TmuxWindow struct {
 	manager *venvy.ProjectManager
 	config  *TmuxWindowConfig
@@ -31,6 +32,9 @@ type TmuxWindow struct {
 
 func (tx *TmuxWindow) ShellActivateCommands() ([]string, error) {
 	currentTmuxSession, err := tmuxCurrentSession()
+	if err != nil {
+		return nil, err
+	}
 	if currentTmuxSession == "" {
 		return nil, fmt.Errorf("no last tmux session and use_session not passed in config")
 	}
@@ -75,11 +79,12 @@ func (tx *TmuxWindow) ShellActivateCommands() ([]string, error) {
 				pf(`tmux send-keys -t "${lastWindow}" '%s' C-m`, paneCommand),
 			)
 		}
+
+		// Set layout every time to make sure the panes fit as desired (tmux err: pane too small)
+		commands = append(commands,
+			pf(`tmux select-layout -t "${lastWindow}" %s`, tx.config.Layout),
+		)
 	}
-	// Set layout before focus!
-	commands = append(commands,
-		pf(`tmux select-layout -t "${lastWindow}" %s`, tx.config.Layout),
-	)
 
 	return commands, nil
 }
@@ -107,6 +112,9 @@ type NameID struct {
 
 func tmuxListWindows() (windows []NameID, err error) {
 	output, err := cmdOutput(exec.Command("tmux", "list-windows", "-F", "#I|#W"))
+	if err != nil {
+		return nil, err
+	}
 	for _, line := range strings.Split(output, "\n") {
 		data := strings.Split(line, "|")
 		windows = append(windows, NameID{ID: data[0], Name: data[1]})
