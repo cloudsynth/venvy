@@ -15,6 +15,7 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"github.com/fatih/color"
 )
 
 var activateFileEnvVar = fmt.Sprintf("%s_ACTIVATE_FILE", strings.ToUpper(venvy.ProjectName))
@@ -140,10 +141,10 @@ func issueActivate(manager *venvy.ProjectManager, activatePath string, deactivat
 
 	// write activation scripts
 	err = ioutil.WriteFile(activatePath, activationScript, 0600)
-	logger.Debugf("Writing activation file to %s with contents:\n%s", activatePath, activationScript)
+	logger.Debugf("Writing %s file to %s with contents:\n\n%s\n", color.GreenString("activation"), activatePath, activationScript)
 	errExit(err)
 	err = ioutil.WriteFile(deactivatePath, deactivationScript, 0600)
-	logger.Debugf("Writing deactivation file to %s with contents:\n%s", deactivatePath, deactivationScript)
+	logger.Debugf("Writing deactivation file to %s with contents:\n\n%s\n", color.BlueString("deactivation"), deactivatePath, deactivationScript)
 	errExit(err)
 }
 

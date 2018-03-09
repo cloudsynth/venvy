@@ -3,6 +3,24 @@ Venvy
 
 A fast modular (see `modules/`) sh hook system bound to subcomamnds. Useful for bootstrapping and managing local development and CI environments.
 
+<!-- toc -->
+
+- [Getting Started](#getting-started)
+    + [Install](#install)
+    + [Create a config](#create-a-config)
+    + [Use your virtual environments](#use-your-virtual-environments)
+- [Modules](#modules)
+    + [Python](#python)
+    + [EnvVars](#envvars)
+    + [Tmux Window](#tmux-window)
+    + [Exec](#exec)
+    + [Jump](#jump)
+    + [PS1 (prompt)](#ps1-prompt)
+    + [Debug](#debug)
+  * [Adding modules](#adding-modules)
+
+<!-- tocstop -->
+
 # Getting Started
 
 ### Install
@@ -167,6 +185,7 @@ For teams you are encouraged to put developer specific configs in a shared file 
 **Type**: python
 
 The python module manages virtualenvs and pip installs for you. 
+This module tracks your dependencies including the contents of the file deps, and triggers an install on activation.
 
 Full config:
 
@@ -177,13 +196,30 @@ type = "python"
     
     # Optional:
 	[modules.config]
-	python = "python3.6" # Default: python, the python to use for the virtualenv
-	dependencies = ["Cython==0.27.3", "requirements.txt"] # Default: [], Files and named dependencies supported 
-	auto_install_deps = false # Default: false, Whether to install changing deps on activation
-	pip_install_command = "pip install" # Default: "pip install", the command to use for the install 
-	prep_pip_install_command = "pip install" # Default: "pip install", the command to use to upgrade pip/virtualenv
+	python = "python3.6" # Default: python3.6, the python to use for the virtualenv
+	dependencies = [
+	    "Cython==0.27.3", 
+	    "requirements.txt"  # .txt files are also automatically tracked for content changes
+    ] # Default: [], Files and named dependencies supported 
 	virtualenv_command = "virtualenv" # Default: "vritualenv", the command to use to build the virtualenv
+	additional_track_files = "" # a list of relative or absoulte file paths to other files to watch for changes to tigger a restart
 ```
+
+#####  Using Pipenv or another installer
+
+Venvy fully supports using pipenv and other python installers. Simply add an `!` prefix to the `dependencies` item value to execute a full command. 
+Note you also want to add any files the command needs to the `additional_track_files` so venvy can monitor it for changes. 
+
+E.g. To use Pipenv 
+
+```
+    [modules.config]
+    dependencies = [
+        "!pipenv install --dev"
+    ]
+    additional_tracked_files = ["Pipfile"]
+```
+
 ### EnvVars
 
 **Type**: env
@@ -213,7 +249,7 @@ Launches a managed tmux window with the panes and commands specified.
 ```toml
 [[modules]]
 name = "tmux"
-type = "tmux-windoow"
+type = "tmux-window"
 
     [modules.config]
     name = "server" # required, name suffix of the tmux window 
@@ -304,7 +340,7 @@ name = "broken_activation"
 modules = ["debug", "py3", "..."]
 ```
 
-## Adding modules:
+## Adding modules
 
 A module defines the following interface:
 
@@ -323,13 +359,11 @@ FAQ:
 - Why not sub-shell? I prefer this dev UX. If you prefer subshells call `$SHELL` first.
   
 
-### Planned modules:
+#### Planned modules
 
 - Brew packages
 - Apt packages
 - Tmux window config
 - Nvm/Npm (similar to python)
 - Golang/deps (similar to python)
-
-   
 
