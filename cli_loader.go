@@ -32,7 +32,9 @@ func globalPath(elem ...string) string {
 	if err != nil {
 		panic(err)
 	}
-	return path.Join(append([]string{dotDir(homeDir)}, elem...)...)
+	venvyDir := dotDir(homeDir)
+	os.MkdirAll(venvyDir, 0700)
+	return path.Join(append([]string{venvyDir}, elem...)...)
 }
 
 type foundScript struct {
@@ -215,6 +217,7 @@ func (f *foundConfig) Scripts() map[string][]*foundScript {
 
 func configPathsFromGit() []*foundConfig {
 	paths := []*foundConfig{}
+	seenPaths := map[string]bool{}
 	gitRoot, err := util.FindPathInAncestors("", ".git")
 	storageDir := dotDir(gitRoot)
 	if err != nil {
@@ -225,9 +228,13 @@ func configPathsFromGit() []*foundConfig {
 
 	addedFilesArgs := []string{"ls-files", "--others", "--exclude-standard", "--full-name"}
 	lsSubmodulesArgs := []string{"ls-files", "--recurse-submodules", "--full-name"}
+	// TODO: older versions of git don't have --recurse submodules, perhaps detect instead of trying again
+	lsNoSubmodules := []string{"ls-files", "--full-name"}
 
-	for _, args := range [][]string{addedFilesArgs, lsSubmodulesArgs} {
-		cmd := exec.Command("git", append(baseArgs, args...)...)
+	for _, args := range [][]string{addedFilesArgs, lsSubmodulesArgs, lsNoSubmodules} {
+		runArgs := append(baseArgs, args...)
+		logger.Debugf("Running command: git %s", strings.Join(runArgs, " "))
+		cmd := exec.Command("git", runArgs...)
 		data, err := cmd.Output()
 		if err != nil {
 			logger.Debugf("ran into err %s doing git ls-files", err)
@@ -235,11 +242,16 @@ func configPathsFromGit() []*foundConfig {
 			lines := strings.Split(strings.TrimSpace(string(data)), "\n")
 			for _, line := range lines {
 				if strings.HasSuffix(line, defaultFileName) {
-					paths = append(paths, &foundConfig{Path: path.Join(gitRoot, line), StorageDir: storageDir})
+					fullPath := path.Join(gitRoot, line)
+					if _, ok := seenPaths[fullPath]; !ok {
+						paths = append(paths, &foundConfig{Path: fullPath, StorageDir: storageDir})
+						seenPaths[fullPath] = true
+					}
 				}
 			}
 		}
 	}
+	logger.Debugf("Found %d configs in git dir.", len(paths))
 	return paths
 }
 
@@ -255,6 +267,7 @@ func configPathsFromHistory() []*foundConfig {
 		logger.Debugf("ran into err unmarshaling seen configs %s", err)
 		return nil
 	}
+	logger.Debugf("Found %d configs in history.", len(foundConfigs))
 	return foundConfigs
 }
 
@@ -267,6 +280,7 @@ func configsPathsFromPwd() []*foundConfig {
 	inDirConfig := path.Join(workDir, defaultFileName)
 	_, err = os.Stat(inDirConfig)
 	if err != nil {
+		logger.Debugf("no config found in current directory")
 		return nil
 	}
 	return []*foundConfig{{Path: inDirConfig, StorageDir: dotDir(workDir)}}
@@ -301,7 +315,7 @@ func LoadConfigs(prefetch bool, useHistory bool) []*foundConfig {
 		if err != nil {
 			logger.Debugf("unable to marshall history file with err %s", err)
 		}
-		os.MkdirAll(filepath.Dir(seenConfigsPath), 0600)
+		os.MkdirAll(filepath.Dir(seenConfigsPath), 0700)
 		err = ioutil.WriteFile(seenConfigsPath, data, 0600)
 		if err != nil {
 			logger.Debugf("Unable to save to history file at %s with err %s", seenConfigsPath, err)

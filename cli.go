@@ -214,10 +214,20 @@ func makeScriptCommand(manager *venvy.ProjectManager, script *foundScript) func(
 	}
 }
 
+func isCIEnv() bool {
+	_, isCI := os.LookupEnv("CI")
+	_, isJenkins := os.LookupEnv("JENKINS_URL")
+	return isCI || isJenkins
+}
+
 func LoadConfigCommands() ([]*cobra.Command, error) {
 	cmds := []*cobra.Command{}
 	useHistory := true
+	if isCIEnv(){
+		logger.Debug("Not using config history, CI environment detected.")
+	}
 	if os.Getenv(disableHistoryEnvVar) != "" {
+		logger.Debugf("Not using config history because envar %s is set", disableHistoryEnvVar)
 		useHistory = false
 	}
 	foundConfigs := LoadConfigs(true, useHistory)
@@ -301,7 +311,7 @@ func handleCliInit() {
 func main() {
 	var err error
 	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "enable verbose logging")
-	rootCmd.PersistentFlags().BoolP("quiet", "q", false, fmt.Sprintf("disable all logging", venvy.ProjectName))
+	rootCmd.PersistentFlags().BoolP("quiet", "q", false, "disable all logging")
 
 	logger.SetOutput(os.Stderr) // default but explicit
 
@@ -316,20 +326,22 @@ func main() {
 	rootCmd.AddCommand(evalCmd)
 	cobra.OnInitialize(handleCliInit)
 
-	subCommand := ""
-	if len(os.Args) > 1 {
-		subCommand = os.Args[1]
+	// Set debug early on so
+	for _, arg := range os.Args {
+		if arg == "-v" || arg == "--verbose"{
+			logger.SetLevel(logger.DebugLevel)
+		}
+		if arg == "--"{
+			break
+		}
+	}
+	configCmds, err := LoadConfigCommands()
+	if err != nil {
+		errExit(err)
 	}
 
-	if subCommand != "version" && subCommand != "shell-init" {
-		configCmds, err := LoadConfigCommands()
-		if err != nil {
-			errExit(err)
-		}
-
-		for _, cmd := range configCmds {
-			rootCmd.AddCommand(cmd)
-		}
+	for _, cmd := range configCmds {
+		rootCmd.AddCommand(cmd)
 	}
 	err = rootCmd.Execute()
 	errExit(err)
