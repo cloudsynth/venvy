@@ -43,7 +43,7 @@ if [ "${current_cmd_type#*function}" = "$current_cmd_type" ]; then
 	function {{ .ProjectName }}(){
 		activate_f=$(mktemp);
 		deactivate_f=$(mktemp);
-		env {{ .ActivateFileEnvVar }}=${activate_f} {{ .DeactivateFileEnvVar }}=${deactivate_f} ${original_{{.ProjectName}}_cmd} --quiet $@ || return $?;
+		env {{ .ActivateFileEnvVar }}=${activate_f} {{ .DeactivateFileEnvVar }}=${deactivate_f} ${original_{{.ProjectName}}_cmd} $@ || return $?;
 		if [ -s ${activate_f} ]; then
 			devenv || true;
 			env {{ .ActivateFileEnvVar }}=${activate_f} {{ .DeactivateFileEnvVar }}=${deactivate_f} ${original_{{.ProjectName}}_cmd} $@ || return $?;
@@ -300,20 +300,14 @@ func handleCliInit() {
 	if debug {
 		logger.SetLevel(logger.DebugLevel)
 	}
-	quiet, err := rootCmd.PersistentFlags().GetBool("quiet")
-	errExit(err)
-	if quiet {
-		logger.SetLevel(logger.FatalLevel)
-	}
-
 }
 
 func main() {
 	var err error
 	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "enable verbose logging")
-	rootCmd.PersistentFlags().BoolP("quiet", "q", false, "disable all logging")
 
 	logger.SetOutput(os.Stderr) // default but explicit
+	logger.SetLevel(logger.ErrorLevel)
 
 	versionCmd := &cobra.Command{
 		Use:   "version",

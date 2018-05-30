@@ -57,7 +57,7 @@ type foundConfig struct {
 func (f *foundConfig) loadConfig() {
 	data, err := ioutil.ReadFile(f.Path)
 	if err != nil {
-		logger.Warnf("unable to read config with error %s", err)
+		logger.Debugf("unable to read config with error %s", err)
 		return
 	}
 	jsonData, err := util.TomlToJson(data)

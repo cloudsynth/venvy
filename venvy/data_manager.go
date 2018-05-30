@@ -81,7 +81,7 @@ func (dm *DataManager) ReadJson(key string, v interface{}) error {
 }
 
 func NewDataManager(storageDir string) (*DataManager, error) {
-	logger.Debugf("Creating data store at %s", storageDir)
+	logger.Debugf("Data store at %s", storageDir)
 	if !filepath.IsAbs(storageDir) {
 		return nil, fmt.Errorf("storage dir %s not an absolute path", storageDir)
 	}
