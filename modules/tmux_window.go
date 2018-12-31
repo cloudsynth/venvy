@@ -2,7 +2,7 @@ package modules
 
 import (
 	"github.com/pnegahdar/venvy/util"
-	"github.com/pnegahdar/venvy/venvy"
+	"github.com/pnegahdar/venvy/manager"
 	logger "github.com/sirupsen/logrus"
 	"os/exec"
 
