@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/fatih/color"
 	"github.com/pnegahdar/venvy/util"
-	"github.com/pnegahdar/venvy/venvy"
+	"github.com/pnegahdar/venvy/manager"
 	"strings"
 )
 

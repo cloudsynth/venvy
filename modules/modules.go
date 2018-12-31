@@ -1,6 +1,6 @@
 package modules
 
-import "github.com/pnegahdar/venvy/venvy"
+import "github.com/pnegahdar/venvy/manager"
 
 var DefaultModuleMakers = venvy.ModuleMakerTypeMap{
 	"python":      NewPythonModule,

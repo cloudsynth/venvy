@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/pnegahdar/venvy/util"
-	"github.com/pnegahdar/venvy/venvy"
+	"github.com/pnegahdar/venvy/manager"
 	"io/ioutil"
 	"strings"
 	"path/filepath"

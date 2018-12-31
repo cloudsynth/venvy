@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/mitchellh/go-homedir"
 	"github.com/pnegahdar/venvy/util"
-	"github.com/pnegahdar/venvy/venvy"
+	"github.com/pnegahdar/venvy/manager"
 	logger "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"os"

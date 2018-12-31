@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/pnegahdar/venvy/modules"
 	"github.com/pnegahdar/venvy/util"
-	"github.com/pnegahdar/venvy/venvy"
+	"github.com/pnegahdar/venvy/manager"
 	logger "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"io/ioutil"

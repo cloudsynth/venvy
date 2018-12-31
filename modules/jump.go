@@ -3,7 +3,7 @@ package modules
 import (
 	"fmt"
 	"github.com/pnegahdar/venvy/util"
-	"github.com/pnegahdar/venvy/venvy"
+	"github.com/pnegahdar/venvy/manager"
 	"os"
 )
 
