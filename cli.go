@@ -144,7 +144,7 @@ func issueActivate(manager *venvy.ProjectManager, activatePath string, deactivat
 	logger.Debugf("Writing %s file to %s with contents:\n\n%s\n", color.GreenString("activation"), activatePath, activationScript)
 	errExit(err)
 	err = ioutil.WriteFile(deactivatePath, deactivationScript, 0600)
-	logger.Debugf("Writing deactivation file to %s with contents:\n\n%s\n", color.BlueString("deactivation"), deactivatePath, deactivationScript)
+	logger.Debugf("Writing %s file to %s with contents:\n\n%s\n", color.RedString("deactivation"), deactivatePath, deactivationScript)
 	errExit(err)
 }
 
