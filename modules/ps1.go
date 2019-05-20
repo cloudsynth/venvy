@@ -53,9 +53,9 @@ func colorString(data string, attrs ...color.Attribute) string {
 func (ps *PS1Module) ShellActivateCommands() ([]string, error) {
 	return []string{
 		`export OLD_PS1="$PS1"`,
-		fmt.Sprintf(`GENERIC_PS1=%s`, ps.config.Value),
-		fmt.Sprintf(`BASH_PS1=%s`, ps.config.BashValue),
-		fmt.Sprintf(`ZSH_PS1=%s`, ps.config.ZshValue),
+		fmt.Sprintf(`GENERIC_PS1="%s"`, ps.config.Value),
+		fmt.Sprintf(`BASH_PS1="%s"`, ps.config.BashValue),
+		fmt.Sprintf(`ZSH_PS1="%s"`, ps.config.ZshValue),
 		fmt.Sprintf(`if [ -n "$ZSH_VERSION" ]; then export PS1="$ZSH_PS1 $PS1"; elif [ -n "$BASH_VERSION" ]; then export PS1="$BASH_PS1 $PS1"; else export PS1="$GENERIC_PS1 $PS1";  fi`),
 	}, nil
 }
