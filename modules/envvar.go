@@ -1,23 +1,41 @@
 package modules
 
 import (
+	"bytes"
 	"fmt"
-	"github.com/pnegahdar/venvy/util"
 	"github.com/pnegahdar/venvy/manager"
+	"github.com/pnegahdar/venvy/util"
+	"github.com/subosito/gotenv"
+	"io/ioutil"
 	"os"
 )
 
 type EnvVarConfig struct {
-	Vars      map[string]string
-	UnsetVars []string `json:"unset_vars"`
+	Vars      map[string]string `json:"vars"`
+	Files     []string          `json:"files"`
+	UnsetVars []string          `json:"unset_vars"`
 }
 
 type EnvvarModule struct {
 	config  *EnvVarConfig
+	manager *venvy.ProjectManager
 }
 
 func (ev *EnvvarModule) ShellActivateCommands() ([]string, error) {
 	commands := []string{}
+
+	for _, file := range ev.config.Files {
+		fullPath := ev.manager.ResolveRootPath(file)
+		data, err := ioutil.ReadFile(fullPath)
+		if err != nil {
+			return nil, fmt.Errorf("unable to find file %s at %s", file, fullPath)
+		}
+		pairs := gotenv.Parse(bytes.NewReader(data))
+		for key, value := range pairs {
+			commands = append(commands, fmt.Sprintf(`export %s="%s"`, key, value))
+		}
+	}
+
 	for key, value := range ev.config.Vars {
 		commands = append(commands, fmt.Sprintf(`export %s="%s"`, key, value))
 	}
@@ -55,5 +73,5 @@ func NewEnvVarModule(manager *venvy.ProjectManager, self *venvy.Module) (venvy.M
 	if err != nil {
 		return nil, err
 	}
-	return &EnvvarModule{config: moduleConfig}, nil
+	return &EnvvarModule{config: moduleConfig, manager: manager}, nil
 }

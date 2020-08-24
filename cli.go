@@ -4,9 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/fatih/color"
+	"github.com/pnegahdar/venvy/manager"
 	"github.com/pnegahdar/venvy/modules"
 	"github.com/pnegahdar/venvy/util"
-	"github.com/pnegahdar/venvy/manager"
 	logger "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"io/ioutil"
@@ -15,7 +16,6 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
-	"github.com/fatih/color"
 )
 
 var activateFileEnvVar = fmt.Sprintf("%s_ACTIVATE_FILE", strings.ToUpper(venvy.ProjectName))
@@ -223,7 +223,7 @@ func isCIEnv() bool {
 func LoadConfigCommands() ([]*cobra.Command, error) {
 	cmds := []*cobra.Command{}
 	useHistory := true
-	if isCIEnv(){
+	if isCIEnv() {
 		logger.Debug("Not using config history, CI environment detected.")
 	}
 	if os.Getenv(disableHistoryEnvVar) != "" {
@@ -322,10 +322,10 @@ func main() {
 
 	// Set debug early on so
 	for _, arg := range os.Args {
-		if arg == "-v" || arg == "--verbose"{
+		if arg == "-v" || arg == "--verbose" {
 			logger.SetLevel(logger.DebugLevel)
 		}
-		if arg == "--"{
+		if arg == "--" {
 			break
 		}
 	}
