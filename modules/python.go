@@ -3,13 +3,13 @@ package modules
 import (
 	"crypto/md5"
 	"encoding/hex"
-	"fmt"
-	"github.com/pnegahdar/venvy/util"
-	"github.com/pnegahdar/venvy/manager"
-	"io/ioutil"
-	"strings"
-	"path/filepath"
 	"encoding/json"
+	"fmt"
+	"github.com/pnegahdar/venvy/manager"
+	"github.com/pnegahdar/venvy/util"
+	"io/ioutil"
+	"path/filepath"
+	"strings"
 )
 
 const DefaultPython = "python3.6"
@@ -56,14 +56,6 @@ func (pm *PythonModule) autoInstallLastHash() string {
 	return strings.TrimSpace(string(data))
 }
 
-func (pm *PythonModule) resolvePath(path string) string {
-	fullPath := util.MustExpandPath(path)
-	if !filepath.IsAbs(path) {
-		fullPath = pm.manager.RootPath(path)
-	}
-	return fullPath
-}
-
 func (pm *PythonModule) autoInstallCalculateDepHash() (string, error) {
 	if len(pm.config.Dependencies) == 0 {
 		return "", nil
@@ -86,7 +78,7 @@ func (pm *PythonModule) autoInstallCalculateDepHash() (string, error) {
 	for _, dep := range pm.config.Dependencies {
 		// read the deps if its a file, preferring .txt instead of isFile type check for safety sake
 		if strings.HasSuffix(dep, ".txt") {
-			fullPath := pm.resolvePath(dep)
+			fullPath := pm.manager.ResolveRootPath(dep)
 			err = writeFileHash(fullPath)
 			if err != nil {
 				return "", err
@@ -94,7 +86,7 @@ func (pm *PythonModule) autoInstallCalculateDepHash() (string, error) {
 		}
 	}
 	for _, additionalFile := range pm.config.AdditionalTrackFiles {
-		fullPath := pm.resolvePath(additionalFile)
+		fullPath := pm.manager.ResolveRootPath(additionalFile)
 		err = writeFileHash(fullPath)
 		if err != nil {
 			return "", err

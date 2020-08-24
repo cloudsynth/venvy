@@ -240,6 +240,17 @@ type = "env"
     unset_vars = ["IS_TESTING"] # Vars to unset
 ```
 
+Environment **files**:
+
+```toml
+[[modules]]
+name = "secrets"
+type = "env"
+
+    [modules.config]
+    files = [".env.secrets", ".env.dev"]
+```
+
 ### Tmux Window
 
 **Type**: tmux-window

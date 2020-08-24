@@ -2,8 +2,8 @@ package modules
 
 import (
 	"fmt"
-	"github.com/pnegahdar/venvy/util"
 	"github.com/pnegahdar/venvy/manager"
+	"github.com/pnegahdar/venvy/util"
 	"os"
 )
 

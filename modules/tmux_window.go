@@ -1,8 +1,8 @@
 package modules
 
 import (
-	"github.com/pnegahdar/venvy/util"
 	"github.com/pnegahdar/venvy/manager"
+	"github.com/pnegahdar/venvy/util"
 	logger "github.com/sirupsen/logrus"
 	"os/exec"
 

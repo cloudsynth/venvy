@@ -10,8 +10,8 @@ import (
 )
 
 type PS1Config struct {
-	Value string
-	ZshValue string
+	Value     string
+	ZshValue  string
 	BashValue string
 }
 
@@ -24,7 +24,7 @@ const escape = "\x1b"
 const noPrintStart = "__noprintstart__"
 const noPrintEnd = "__noprintend__"
 
-func replaceNoPrint(data, startSeq, endSeq string) string{
+func replaceNoPrint(data, startSeq, endSeq string) string {
 	replaceStart := strings.ReplaceAll(data, noPrintStart, startSeq)
 	return strings.ReplaceAll(replaceStart, noPrintEnd, endSeq)
 
@@ -86,10 +86,10 @@ func NewPS1Module(manager *venvy.ProjectManager, self *venvy.Module) (venvy.Modu
 		moduleConfig.BashValue = replaceNoPrint(colored, "\\[", "\\]")
 		moduleConfig.ZshValue = replaceNoPrint(colored, "%{", "%}")
 	}
-	if moduleConfig.BashValue == ""{
+	if moduleConfig.BashValue == "" {
 		moduleConfig.BashValue = moduleConfig.Value
 	}
-	if moduleConfig.ZshValue == ""{
+	if moduleConfig.ZshValue == "" {
 		moduleConfig.ZshValue = moduleConfig.Value
 	}
 	return &PS1Module{manager: manager, config: moduleConfig}, nil

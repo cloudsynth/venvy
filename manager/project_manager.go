@@ -67,6 +67,14 @@ func (pm *ProjectManager) RootPath(elem ...string) string {
 	return filepath.Join(elem...)
 }
 
+func (pm *ProjectManager) ResolveRootPath(path string) string {
+	fullPath := util.MustExpandPath(path)
+	if !filepath.IsAbs(path) {
+		fullPath = pm.RootPath(path)
+	}
+	return fullPath
+}
+
 func (pm *ProjectManager) AppendModules(modules ...*Module) {
 	for _, module := range modules {
 		pm.relatedModules[module.Name] = module
@@ -76,7 +84,7 @@ func (pm *ProjectManager) AppendModules(modules ...*Module) {
 
 func (pm *ProjectManager) PrependModules(modules ...*Module) {
 	// prepend in reverse so left most arg is up front
-	for i := len(modules) - 1; i >= 0; i -- {
+	for i := len(modules) - 1; i >= 0; i-- {
 		pm.relatedModules[modules[i].Name] = modules[i]
 		pm.Project.Modules = append([]string{modules[i].Name}, pm.Project.Modules...)
 

@@ -1,8 +1,8 @@
 package modules
 
 import (
-	"github.com/pnegahdar/venvy/util"
 	"github.com/pnegahdar/venvy/manager"
+	"github.com/pnegahdar/venvy/util"
 )
 
 type ExecConfig struct {
