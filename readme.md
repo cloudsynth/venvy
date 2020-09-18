@@ -34,14 +34,14 @@ go get -u github.com/pnegahdar/venvy
 For OSX:
 
 ```
-curl -SL https://github.com/cloudsynth/venvy/releases/download/0.0.2/darwin_amd64 > /usr/local/bin/venvy && \
+curl -SL https://github.com/cloudsynth/venvy/releases/download/0.0.3/darwin_amd64 > /usr/local/bin/venvy && \
     chmod +x /usr/local/bin/venvy
 ```
 
 For Linux:
 
 ```
-curl -SL https://github.com/cloudsynth/venvy/releases/download/0.0.2/linux_amd64 > /usr/local/bin/venvy && \
+curl -SL https://github.com/cloudsynth/venvy/releases/download/0.0.3/linux_amd64 > /usr/local/bin/venvy && \
     chmod +x /usr/local/bin/venvy
 ```
 
