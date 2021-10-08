@@ -4,10 +4,6 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"github.com/mitchellh/go-homedir"
-	"github.com/pnegahdar/venvy/manager"
-	"github.com/pnegahdar/venvy/util"
-	logger "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -17,6 +13,11 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/mitchellh/go-homedir"
+	"github.com/pnegahdar/venvy/manager"
+	"github.com/pnegahdar/venvy/util"
+	logger "github.com/sirupsen/logrus"
 )
 
 var defaultFileName = fmt.Sprintf("%s.toml", venvy.ProjectName)
