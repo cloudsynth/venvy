@@ -5,25 +5,44 @@
 class Venvy < Formula
   desc "A fast modular (see modules/) sh hook system bound to subcomamnds. Useful for bootstrapping and managing local development and CI environments."
   homepage ""
-  version "0.2.0"
+  version "0.3.0"
   license "MIT"
-  bottle :unneeded
 
   on_macos do
+    if Hardware::CPU.arm?
+      url "https://github.com/cloudsynth/venvy/releases/download/v0.3.0/venvy_0.3.0_Darwin_arm64.tar.gz"
+      sha256 "006b97aec9c62ae3aa4e4f68464161de3e4533b1263bb69943d13168b6cd61dd"
+
+      def install
+        bin.install "venvy"
+      end
+    end
     if Hardware::CPU.intel?
-      url "https://github.com/cloudsynth/venvy/releases/download/v0.2.0/venvy_0.2.0_Darwin_x86_64.tar.gz"
-      sha256 "982c20314dfab75cf81933657fdd217302a3667c087000398f3637bb8afb4d66"
+      url "https://github.com/cloudsynth/venvy/releases/download/v0.3.0/venvy_0.3.0_Darwin_x86_64.tar.gz"
+      sha256 "39277165f0b76275d974dfa60be141bc49d5697440ac0c4e46e954665accdbf5"
+
+      def install
+        bin.install "venvy"
+      end
     end
   end
 
   on_linux do
-    if Hardware::CPU.intel?
-      url "https://github.com/cloudsynth/venvy/releases/download/v0.2.0/venvy_0.2.0_Linux_x86_64.tar.gz"
-      sha256 "ca4698feb417a2e18647eb5e53e2730509b5b9c89583b23f1192cd9f873d77eb"
-    end
-  end
+    if Hardware::CPU.arm? && Hardware::CPU.is_64_bit?
+      url "https://github.com/cloudsynth/venvy/releases/download/v0.3.0/venvy_0.3.0_Linux_arm64.tar.gz"
+      sha256 "872b21739b8d5b4dcde77983f353ca83b0ca7ce550d89e08d21f5de2cfc54816"
 
-  def install
-    bin.install "venvy"
+      def install
+        bin.install "venvy"
+      end
+    end
+    if Hardware::CPU.intel?
+      url "https://github.com/cloudsynth/venvy/releases/download/v0.3.0/venvy_0.3.0_Linux_x86_64.tar.gz"
+      sha256 "75bf162f08c12fe6a4de399059326b07219195415c5c4463c10302004a3691dd"
+
+      def install
+        bin.install "venvy"
+      end
+    end
   end
 end
