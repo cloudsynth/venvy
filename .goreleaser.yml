@@ -15,6 +15,13 @@ builds:
       - darwin
     goarch:
       - amd64
+      - arm64
+    goarm:
+      - 6
+      - 7
+    ignore:
+      - goos: windows
+        goarch: arm64
 archives:
   - replacements:
       darwin: Darwin
