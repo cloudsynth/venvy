@@ -24,7 +24,12 @@ A fast modular (see `modules/`) sh hook system bound to subcomamnds. Useful for 
 # Getting Started
 
 ### Install
+Homebrew:
 
+```shell
+$ brew tap venvy/cloudsynth https://github.com/cloudsynth/venvy
+$ brew install venvy
+```
 For golang:
 
 ```
